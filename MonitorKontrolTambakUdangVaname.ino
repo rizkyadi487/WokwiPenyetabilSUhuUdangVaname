@@ -15,6 +15,7 @@
 #define THINGSBOARD_SERVER  "thingsboard.cloud"
 
 const int DHT_PIN = 15;
+const int PIN_RELAY = 5;
 
 DHTesp dhtSensor;
 
@@ -53,8 +54,9 @@ void setup() {
   // initialize serial for debugging
   Serial.begin(115200);
   Serial.println();
-  InitWiFi();
+  // InitWiFi();
   dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
+  pinMode(PIN_RELAY, OUTPUT);
 }
 
 void loop() {
@@ -78,9 +80,17 @@ void loop() {
   Serial.println("Mengirim data...");
 
   TempAndHumidity  data = dhtSensor.getTempAndHumidity();
-  tb.sendTelemetryInt("temperature", data.temperature);
   Serial.print("Suhu : ");
-  Serial.print(data.temperature);
+  Serial.println(data.temperature);
 
+  if(data.temperature < 26 || data.temperature > 34){
+    digitalWrite(PIN_RELAY, LOW);
+    Serial.println("Motor Menyala");
+  }else{
+    digitalWrite(PIN_RELAY, HIGH);
+    Serial.println("Motor Mati");
+  }
+
+  tb.sendTelemetryInt("temperature", data.temperature);
   tb.loop();
 }
