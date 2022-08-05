@@ -14,12 +14,72 @@
 
 const int DHT_PIN = 15;
 const int PIN_RELAY = 5;
+const int PIN_RELAY_ = 5;
 
 DHTesp dhtSensor;
 
 WiFiClient espClient;
 ThingsBoard tb(espClient);
 int status = WL_IDLE_STATUS;
+
+int motor_status;
+
+void setup() {
+  // initialize serial for debugging
+  Serial.begin(115200);
+  Serial.println();
+  //InitWiFi();
+  dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
+  pinMode(PIN_RELAY, OUTPUT);
+}
+
+void loop() {
+  delay(1000);
+
+  TempAndHumidity  data = dhtSensor.getTempAndHumidity();
+  Serial.print("Suhu : "+String(data.temperature)+ "°C");
+
+  if(data.temperature < 26 || data.temperature > 34){
+    digitalWrite(PIN_RELAY, LOW);
+    motor_status = 1;
+    
+
+  }else{
+    digitalWrite(PIN_RELAY, HIGH);
+    motor_status = 0;
+  }
+
+  Serial.print(" | Status Motor : "+String(motor_status == 1 ? "Motor Menyala" : "Motor Mati "));
+
+  if (WiFi.status() != WL_CONNECTED) {
+    reconnect();
+  }
+
+  if (!tb.connected()) {
+    // Connect to the ThingsBoard
+    Serial.print("Koneksi ke: ");
+    Serial.print(THINGSBOARD_SERVER);
+    Serial.print(" dengan token ");
+    Serial.println(TOKEN);
+    if (!tb.connect(THINGSBOARD_SERVER, TOKEN)) {
+      Serial.println("Gagal untuk mengkoneksikan");
+      return;
+    }
+    tb.sendTelemetryFloat("latitude", 	7.46725893);
+    tb.sendTelemetryFloat("longitude", 	112.7747726);
+  }
+
+  Serial.println(" | Mengirim data...");
+
+  switch(motor_status){
+    case 1 : tb.sendTelemetryString("motor_status", "Motor Menyala");break;
+    case 0 : tb.sendTelemetryString("motor_status", "Motor Mati");break;
+    default : Serial.println("Status motor belum didefinisikan");
+  }
+  
+  tb.sendTelemetryInt("temperature", data.temperature);
+  tb.loop();
+}
 
 void InitWiFi()
 {
@@ -45,51 +105,4 @@ void reconnect() {
     }
   Serial.println("Terhubung ke Akses Poin");
   }
-}
-
-void setup() {
-  // initialize serial for debugging
-  Serial.begin(115200);
-  Serial.println();
-  //InitWiFi();
-  dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
-  pinMode(PIN_RELAY, OUTPUT);
-}
-
-void loop() {
-  delay(1000);
-
-  if (WiFi.status() != WL_CONNECTED) {
-    reconnect();
-  }
-
-  if (!tb.connected()) {
-    // Connect to the ThingsBoard
-    Serial.print("Koneksi ke: ");
-    Serial.print(THINGSBOARD_SERVER);
-    Serial.print(" dengan token ");
-    Serial.println(TOKEN);
-    if (!tb.connect(THINGSBOARD_SERVER, TOKEN)) {
-      Serial.println("Gagal untuk mengkoneksikan");
-      return;
-    }
-    tb.sendTelemetryFloat("latitude", 	7.46725893);
-    tb.sendTelemetryFloat("longitude", 	112.7747726);
-  }
-  Serial.println("Mengirim data...");
-
-  TempAndHumidity  data = dhtSensor.getTempAndHumidity();
-  Serial.print("Suhu : ");
-  Serial.println(data.temperature);
-
-  if(data.temperature < 26 || data.temperature > 34){
-    digitalWrite(PIN_RELAY, LOW);
-    tb.sendTelemetryString("motor_status", "Motor Menyala");
-  }else{
-    digitalWrite(PIN_RELAY, HIGH);
-    tb.sendTelemetryString("motor_status", "Motor Mati");
-  }
-
-  tb.sendTelemetryInt("temperature", data.temperature);
-  tb.loop();
 }
