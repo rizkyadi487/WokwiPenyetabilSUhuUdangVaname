@@ -9,9 +9,7 @@
 #define WIFI_SSID           "Wokwi-GUEST"
 #define WIFI_PASSWORD       ""
 
-// See https://thingsboard.io/docs/getting-started-guides/helloworld/
-// to understand how to obtain an access token
-#define TOKEN               "2VacTghl150ZqZojc6Pp"
+#define TOKEN               "?????????????????"
 #define THINGSBOARD_SERVER  "thingsboard.cloud"
 
 const int DHT_PIN = 15;
@@ -26,7 +24,6 @@ int status = WL_IDLE_STATUS;
 void InitWiFi()
 {
   Serial.println("Sedang Mengkoneksikan ke Akses Point ...");
-  // attempt to connect to WiFi network
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
@@ -54,7 +51,7 @@ void setup() {
   // initialize serial for debugging
   Serial.begin(115200);
   Serial.println();
-  // InitWiFi();
+  //InitWiFi();
   dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
   pinMode(PIN_RELAY, OUTPUT);
 }
@@ -76,6 +73,8 @@ void loop() {
       Serial.println("Gagal untuk mengkoneksikan");
       return;
     }
+    tb.sendTelemetryFloat("latitude", 	7.46725893);
+    tb.sendTelemetryFloat("longitude", 	112.7747726);
   }
   Serial.println("Mengirim data...");
 
@@ -85,10 +84,10 @@ void loop() {
 
   if(data.temperature < 26 || data.temperature > 34){
     digitalWrite(PIN_RELAY, LOW);
-    Serial.println("Motor Menyala");
+    tb.sendTelemetryString("motor_status", "Motor Menyala");
   }else{
     digitalWrite(PIN_RELAY, HIGH);
-    Serial.println("Motor Mati");
+    tb.sendTelemetryString("motor_status", "Motor Mati");
   }
 
   tb.sendTelemetryInt("temperature", data.temperature);
